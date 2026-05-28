@@ -336,7 +336,7 @@ const MESH_OPTIONS = [
   { value: "insetcube", label: "Inset Cube" },
 ];
 
-function StageHUD({ tweaks, setTweak, selected }) {
+function StageHUD({ tweaks, setTweak, selected, meshOptions, onUploadMesh }) {
   return (
     <div className="hud">
       <div className="hud-l">
@@ -356,10 +356,19 @@ function StageHUD({ tweaks, setTweak, selected }) {
             value={tweaks.mesh}
             onChange={(e) => setTweak("mesh", e.target.value)}
           >
-            {MESH_OPTIONS.map((o) => (
+            {meshOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+        </label>
+        <label className="hud-btn" title="Upload a .glb mesh">
+          + GLB
+          <input
+            type="file"
+            accept=".glb,model/gltf-binary"
+            onChange={onUploadMesh}
+            style={{ display: "none" }}
+          />
         </label>
         <label className="hud-select">
           <span>HDRI</span>
@@ -421,6 +430,11 @@ function App() {
   const [selected, setSelected] = useState(null);
   const [tweaks, setTweaks] = useState(DEFAULTS);
   const [favorites, toggleFavorite] = useFavorites();
+  // User-uploaded meshes live in-memory only; they appear in the MESH
+  // dropdown until the page reloads. Each entry is { value, label }
+  // where value is the cache key returned by viewer.loadCustomGLB().
+  const [userMeshes, setUserMeshes] = useState([]);
+  const meshOptions = useMemo(() => [...MESH_OPTIONS, ...userMeshes], [userMeshes]);
 
   // setTweak accepts (key, value) or an object of edits. Roughness ↔ gloss
   // mirror each other unless both are passed explicitly.
@@ -492,6 +506,27 @@ function App() {
     viewerRef.current.setMesh(tweaks.mesh);
   }, [ready, tweaks.mesh, viewerRef]);
 
+  // File-picker handler for the "+ GLB" button in the HUD. Loads the GLB
+  // into the viewer cache, appends it to userMeshes (replacing any prior
+  // entry with the same filename), and switches the active mesh to it.
+  // Resets the input element so re-selecting the same file fires onChange.
+  const onUploadMesh = useCallback((e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !viewerRef.current) return;
+    viewerRef.current.loadCustomGLB(file).then((key) => {
+      setUserMeshes((prev) => {
+        const without = prev.filter((m) => m.value !== key);
+        return [...without, { value: key, label: file.name }];
+      });
+      setTweak("mesh", key);
+    }).catch((err) => {
+      console.warn("Custom mesh upload failed:", err);
+      // eslint-disable-next-line no-alert
+      alert(`Couldn't load ${file.name}: ${err?.message || err}`);
+    });
+  }, [viewerRef, setTweak]);
+
   useEffect(() => {
     if (!ready || !viewerRef.current) return;
     viewerRef.current.setTonemapping(tweaks.tonemap);
@@ -537,7 +572,13 @@ function App() {
 
       <SpecSheet mat={selected} tweaks={tweaks} />
 
-      <StageHUD tweaks={tweaks} setTweak={setTweak} selected={selected} />
+      <StageHUD
+        tweaks={tweaks}
+        setTweak={setTweak}
+        selected={selected}
+        meshOptions={meshOptions}
+        onUploadMesh={onUploadMesh}
+      />
     </div>
   );
 }

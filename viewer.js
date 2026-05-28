@@ -522,6 +522,51 @@ class PBRViewer {
     );
   }
 
+  // Load a user-supplied GLB from a browser `File` (drag/drop or file input).
+  // Adds it to the mesh cache under a `"user:<filename>"` key and returns the
+  // key so the UI can list it in the dropdown and switch to it. Re-uploading
+  // a file with the same name overwrites the previous entry (and disposes
+  // the old geometry). Same auto-fit pipeline as the built-in GLBs, so the
+  // sphere-chord thickness patch keeps working.
+  loadCustomGLB(file) {
+    return new Promise((resolve, reject) => {
+      if (this._disposed) {
+        reject(new Error("viewer disposed"));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error("file read failed"));
+      reader.onload = () => {
+        if (this._disposed) {
+          reject(new Error("viewer disposed"));
+          return;
+        }
+        new GLTFLoader().parse(
+          reader.result,
+          "",
+          (gltf) => {
+            if (this._disposed) {
+              reject(new Error("viewer disposed"));
+              return;
+            }
+            const sourceMesh = this._firstMesh(gltf.scene);
+            if (!sourceMesh) {
+              reject(new Error(`${file.name} contains no mesh`));
+              return;
+            }
+            const geom = this._fitToUnitSphere(sourceMesh);
+            const key = `user:${file.name}`;
+            if (this._meshCache[key]) this._meshCache[key].dispose();
+            this._meshCache[key] = geom;
+            resolve(key);
+          },
+          (err) => reject(err instanceof Error ? err : new Error(String(err))),
+        );
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
   // Replace the sphere mesh's geometry in place. Old geometry is NOT
   // disposed — it lives in _meshCache so toggling back is instant.
   _applyGeometry(geom) {

@@ -206,14 +206,22 @@
     { value: "cube", label: "Cube" },
     { value: "insetcube", label: "Inset Cube" }
   ];
-  function StageHUD({ tweaks, setTweak, selected }) {
+  function StageHUD({ tweaks, setTweak, selected, meshOptions, onUploadMesh }) {
     return /* @__PURE__ */ React.createElement("div", { className: "hud" }, /* @__PURE__ */ React.createElement("div", { className: "hud-l" }, /* @__PURE__ */ React.createElement("div", { className: "hud-stat" }, /* @__PURE__ */ React.createElement("span", { className: "hud-k" }, "MATERIAL"), /* @__PURE__ */ React.createElement("span", { className: "hud-v" }, selected?.name ?? "\u2014")), /* @__PURE__ */ React.createElement("div", { className: "hud-stat" }, /* @__PURE__ */ React.createElement("span", { className: "hud-k" }, "TYPE"), /* @__PURE__ */ React.createElement("span", { className: "hud-v" }, selected ? selected.cat === "metal" ? "CONDUCTOR" : "DIELECTRIC" : "\u2014"))), /* @__PURE__ */ React.createElement("div", { className: "hud-r" }, /* @__PURE__ */ React.createElement("label", { className: "hud-select" }, /* @__PURE__ */ React.createElement("span", null, "MESH"), /* @__PURE__ */ React.createElement(
       "select",
       {
         value: tweaks.mesh,
         onChange: (e) => setTweak("mesh", e.target.value)
       },
-      MESH_OPTIONS.map((o) => /* @__PURE__ */ React.createElement("option", { key: o.value, value: o.value }, o.label))
+      meshOptions.map((o) => /* @__PURE__ */ React.createElement("option", { key: o.value, value: o.value }, o.label))
+    )), /* @__PURE__ */ React.createElement("label", { className: "hud-btn", title: "Upload a .glb mesh" }, "+ GLB", /* @__PURE__ */ React.createElement(
+      "input",
+      {
+        type: "file",
+        accept: ".glb,model/gltf-binary",
+        onChange: onUploadMesh,
+        style: { display: "none" }
+      }
     )), /* @__PURE__ */ React.createElement("label", { className: "hud-select" }, /* @__PURE__ */ React.createElement("span", null, "HDRI"), /* @__PURE__ */ React.createElement(
       "select",
       {
@@ -277,6 +285,8 @@
     const [selected, setSelected] = useState(null);
     const [tweaks, setTweaks] = useState(DEFAULTS);
     const [favorites, toggleFavorite] = useFavorites();
+    const [userMeshes, setUserMeshes] = useState([]);
+    const meshOptions = useMemo(() => [...MESH_OPTIONS, ...userMeshes], [userMeshes]);
     const setTweak = useCallback((k, v) => {
       const edits = typeof k === "object" && k !== null ? { ...k } : { [k]: v };
       if (edits.roughness !== void 0 && edits.gloss === void 0) {
@@ -331,6 +341,21 @@
       if (!ready || !viewerRef.current) return;
       viewerRef.current.setMesh(tweaks.mesh);
     }, [ready, tweaks.mesh, viewerRef]);
+    const onUploadMesh = useCallback((e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file || !viewerRef.current) return;
+      viewerRef.current.loadCustomGLB(file).then((key) => {
+        setUserMeshes((prev) => {
+          const without = prev.filter((m) => m.value !== key);
+          return [...without, { value: key, label: file.name }];
+        });
+        setTweak("mesh", key);
+      }).catch((err) => {
+        console.warn("Custom mesh upload failed:", err);
+        alert(`Couldn't load ${file.name}: ${err?.message || err}`);
+      });
+    }, [viewerRef, setTweak]);
     useEffect(() => {
       if (!ready || !viewerRef.current) return;
       viewerRef.current.setTonemapping(tweaks.tonemap);
@@ -348,7 +373,16 @@
         favorites,
         toggleFavorite
       }
-    ), /* @__PURE__ */ React.createElement(SpecSheet, { mat: selected, tweaks }), /* @__PURE__ */ React.createElement(StageHUD, { tweaks, setTweak, selected }));
+    ), /* @__PURE__ */ React.createElement(SpecSheet, { mat: selected, tweaks }), /* @__PURE__ */ React.createElement(
+      StageHUD,
+      {
+        tweaks,
+        setTweak,
+        selected,
+        meshOptions,
+        onUploadMesh
+      }
+    ));
   }
   ReactDOM.createRoot(document.getElementById("root")).render(/* @__PURE__ */ React.createElement(App, null));
 })();
