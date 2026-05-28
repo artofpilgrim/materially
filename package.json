@@ -1,0 +1,16 @@
+{
+  "name": "materially-pbr-reference",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild app.jsx --bundle=false --format=iife --jsx=transform --jsx-factory=React.createElement --jsx-fragment=React.Fragment --outfile=dist/app.js --legal-comments=none",
+    "serve": "http-server . -p 8000 -c-1",
+    "test": "npm run build && playwright test",
+    "check": "npm run build && node --check viewer.js && node --check data/materials.js && node --check scripts/fit-f82-fab-z.js && node --check dist/app.js && playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0",
+    "esbuild": "^0.25.5",
+    "http-server": "^14.1.1"
+  }
+}

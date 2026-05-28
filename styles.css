@@ -1,0 +1,513 @@
+/* ─── Material Studio — instrument UI ──────────────────────────────────── */
+
+/* Palette mirrors physicallybased.info (dark variant): warm charcoal bg,
+   warm light-grey ink, muted amber/warning accent, low-chroma category hues.
+   Source: https://physicallybased.info/ — Anton Palmqvist. */
+:root {
+  --bg: #31302e;              /* PB.info --background-dark */
+  --bg-2: #282725;            /* slightly deeper for nested panels */
+  --ink: #bebeba;             /* PB.info --primary-dark */
+  --ink-2: #8d8c87;           /* mid grey */
+  --ink-3: #63635e;           /* PB.info --line-dark, repurposed as muted text */
+  --line: rgba(190, 188, 181, 0.12);
+  --line-2: rgba(190, 188, 181, 0.06);
+  --accent: #cb863c;          /* PB.info --warning (warm amber) */
+  --accent-soft: color-mix(in srgb, var(--accent) 22%, transparent);
+
+  --pb-red:   #e7b8b8;        /* PB.info --red-dark */
+  --pb-green: #a0dfbb;        /* PB.info --green-dark */
+  --pb-blue:  #9bb0e2;        /* PB.info --blue-dark */
+
+  --rail-w-l: 280px;
+  --rail-w-r: 320px;
+  --top-h: 52px;
+  --hud-h: 60px;
+
+  /* Category swatches sit in PB.info's muted register: c ≈ 0.06–0.09,
+     hues drawn from their red/green/blue + warm-neutral palette. */
+  --cat-metal:   #cb863c;     /* metallic = warning amber */
+  --cat-glass:   var(--pb-blue);
+  --cat-liquid:  oklch(0.78 0.08 240);
+  --cat-organic: var(--pb-green);
+  --cat-plastic: var(--pb-red);
+  --cat-surface: oklch(0.78 0.03 70);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--ink); }
+body {
+  font-family: "Inter", ui-sans-serif, -apple-system, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+/* App grid */
+.app {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: var(--rail-w-l) 1fr var(--rail-w-r);
+  grid-template-rows: var(--top-h) 1fr var(--hud-h);
+  grid-template-areas:
+    "top   top    top"
+    "left  stage  right"
+    "left  hud    right";
+  background: var(--bg);
+}
+
+/* Stage is left clean — no overlays on the sphere */
+
+/* ─── topbar ─────────────────────────────────────────────────────────────── */
+.topbar {
+  grid-area: top;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(40,39,37,0.65), rgba(40,39,37,0.0));
+  backdrop-filter: blur(8px);
+  z-index: 10;
+  min-width: 0;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid var(--line);
+  background: radial-gradient(circle at 35% 30%, #fff, var(--accent) 40%, var(--bg-2) 80%);
+  position: relative;
+  box-shadow: 0 0 24px var(--accent-soft);
+}
+.brand-mark .dot {
+  position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle at 65% 70%, rgba(0,0,0,0.6), transparent 40%),
+    radial-gradient(circle at 30% 25%, rgba(255,255,255,0.95), transparent 30%);
+}
+.brand-name { font: 700 12px/1 "Inter", sans-serif; letter-spacing: 0.18em; }
+.brand-sub  { font: 500 10px/1 "JetBrains Mono", monospace; color: var(--ink-3); letter-spacing: 0.14em; margin-top: 4px; }
+
+.topbar-mid {
+  font: 500 11px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.06em;
+}
+.kbd {
+  display: inline-block;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--ink-2);
+  margin: 0 2px;
+  font-size: 10px;
+}
+
+.topbar-r { display: flex; align-items: center; gap: 24px; }
+.topbar-stat { display: flex; flex-direction: column; gap: 3px; text-align: right; }
+.topbar-stat .k { font: 600 9px/1 "JetBrains Mono", monospace; color: var(--ink-3); letter-spacing: 0.16em; }
+.topbar-stat .v { font: 500 12px/1 "JetBrains Mono", monospace; color: var(--ink); letter-spacing: 0.04em; }
+
+/* ─── rails ─────────────────────────────────────────────────────────────── */
+.rail {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, rgba(49,48,46,0.55), rgba(40,39,37,0.55));
+  backdrop-filter: blur(10px);
+  z-index: 6;
+  min-height: 0;
+  min-width: 0;
+}
+.rail-left  { grid-area: left;  border-right: 1px solid var(--line); }
+.rail-right { grid-area: right; border-left:  1px solid var(--line); }
+
+.rail-head { padding: 16px 16px 12px; border-bottom: 1px solid var(--line-2); }
+.rail-eyebrow {
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.18em;
+  margin-bottom: 8px;
+}
+.rail-title { font: 600 18px/1.1 "Inter", sans-serif; letter-spacing: -0.01em; margin-bottom: 12px; }
+.rail-title.spec-title { font-size: 17px; }
+
+.search {
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.35);
+  color: var(--ink);
+  font: 500 13px/1 "Inter", sans-serif;
+  padding: 9px 11px;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 120ms;
+}
+.search:focus { border-color: var(--accent); }
+.search::placeholder { color: var(--ink-3); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.chip {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-2);
+  font: 500 10px/1 "Inter", sans-serif;
+  letter-spacing: 0.04em;
+  padding: 5px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: 120ms;
+}
+.chip:hover { color: var(--ink); border-color: rgba(255,255,255,0.18); }
+.chip.is-on { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+
+.count {
+  margin-top: 10px;
+  font: 500 10px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.1em;
+}
+
+/* material list */
+.rail-list {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.rail-list::-webkit-scrollbar { width: 8px; }
+.rail-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+.mat-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 16px;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-left: 2px solid transparent;
+  color: var(--ink-2);
+  font: 500 13px/1.2 "Inter", sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.mat-row:hover { background: rgba(255,255,255,0.03); color: var(--ink); }
+.mat-row.is-on {
+  background: linear-gradient(90deg, var(--accent-soft), transparent 70%);
+  border-left-color: var(--accent);
+  color: var(--ink);
+}
+.mat-swatch {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.6);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 4px rgba(0,0,0,0.4);
+}
+.mat-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mat-cat {
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.mat-row.is-on .mat-cat { color: var(--ink-2); }
+.empty { padding: 24px; color: var(--ink-3); font-size: 12px; }
+
+/* Favorite star (per row). Only fully visible when set; muted otherwise so it
+   doesn't compete with the swatch. */
+.mat-star {
+  font-size: 13px;
+  line-height: 1;
+  color: transparent;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: color 100ms, background 100ms;
+  user-select: none;
+}
+.mat-row:hover .mat-star { color: var(--ink-3); }
+.mat-star:hover { color: var(--ink); background: rgba(255,255,255,0.08); }
+.mat-star.is-on { color: var(--accent); }
+.mat-row.is-on .mat-star.is-on { color: var(--accent); }
+
+/* Thin divider between the pinned group and the rest of the list. */
+.rail-divider {
+  height: 1px;
+  margin: 6px 16px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+/* ─── right rail spec sheet ────────────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--line);
+  color: var(--ink-2);
+}
+.cat-metal   { color: var(--cat-metal); }
+.cat-glass   { color: var(--cat-glass); }
+.cat-liquid  { color: var(--cat-liquid); }
+.cat-organic { color: var(--cat-organic); }
+.cat-plastic { color: var(--cat-plastic); }
+.cat-surface { color: var(--cat-surface); }
+
+.block {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line-2);
+}
+.block-h {
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.18em;
+  margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.block-h.sub { margin-top: 12px; }
+
+.row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 12px;
+  font: 500 11.5px/1.4 "Inter", sans-serif;
+  padding: 3px 0;
+}
+.row-k { color: var(--ink-3); font: 500 11px/1.4 "JetBrains Mono", monospace; letter-spacing: 0.04em; }
+.row-v { color: var(--ink); }
+.row-v.mono { font: 500 12px/1.4 "JetBrains Mono", monospace; letter-spacing: 0.02em; }
+
+/* Big combined color swatch — click to copy the display-sRGB hex. */
+.albedo-swatch {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 64px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06), inset 0 0 0 1px rgba(0,0,0,0.25);
+  margin-bottom: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+  transition: box-shadow 120ms, transform 120ms;
+}
+.albedo-swatch:hover { box-shadow: 0 0 0 1px var(--accent), 0 0 12px var(--accent-soft); }
+.albedo-swatch.is-copied { box-shadow: 0 0 0 1px var(--accent), 0 0 16px var(--accent-soft); }
+.albedo-swatch-fill { display: block; width: 100%; height: 100%; }
+.albedo-swatch.is-copied::after {
+  content: "COPIED";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 10px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.2em;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8), 0 0 8px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+
+/* RGB cells: label + copyable value, no bar. */
+.rgb-blocks { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.rgb-cell {
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 8px;
+  background: rgba(0,0,0,0.25);
+}
+.rgb-l {
+  font: 700 9px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+}
+.rgb-v {
+  font: 500 13px/1.1 "JetBrains Mono", monospace;
+  color: var(--ink);
+}
+
+/* Click-to-copy tokens. The negative margins keep layout unchanged when
+   inline so values stay aligned with non-copyable text. */
+.copy {
+  display: inline-block;
+  padding: 1px 5px;
+  margin: -1px -5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 100ms, color 100ms;
+}
+.copy:hover { background: rgba(255,255,255,0.08); }
+.copy.is-copied {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* Spaced run of copy tokens for multi-value rows (0–1, 0–255). */
+.multi { display: inline-flex; gap: 10px; }
+
+/* Credits block at the bottom of the spec sheet. */
+.credits { border-bottom: 0; }
+.link {
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--line);
+  transition: color 120ms, border-color 120ms;
+}
+.link:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.credits-note {
+  margin-top: 10px;
+  font: 500 10px/1.4 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.04em;
+}
+
+/* ─── stage ─────────────────────────────────────────────────────────────── */
+.stage { grid-area: stage; position: relative; overflow: hidden; min-width: 0; }
+.canvas { width: 100%; height: 100%; display: block; }
+
+/* ─── HUD ───────────────────────────────────────────────────────────────── */
+.hud {
+  grid-area: hud;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(0deg, rgba(40,39,37,0.65), rgba(40,39,37,0.0));
+  backdrop-filter: blur(8px);
+  z-index: 7;
+  gap: 18px;
+  min-width: 0;
+}
+.hud-l, .hud-r { display: flex; align-items: center; gap: 24px; min-width: 0; }
+.hud-stat { display: flex; align-items: baseline; gap: 8px; }
+.hud-stat .hud-k {
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.16em;
+}
+.hud-stat .hud-v {
+  font: 500 13px/1 "JetBrains Mono", monospace;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+}
+
+.slider {
+  display: flex; align-items: center; gap: 8px;
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.16em;
+}
+.slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px; height: 2px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 1px;
+}
+.slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--accent-soft);
+}
+.slider input[type="range"]::-moz-range-thumb {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 0;
+  cursor: pointer;
+}
+.slider .mono { color: var(--ink); font-size: 11px; min-width: 36px; }
+
+.hud-btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.3);
+  color: var(--ink-2);
+  font: 600 10px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.12em;
+  padding: 7px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: 120ms;
+}
+.hud-btn:hover { color: var(--ink); border-color: rgba(255,255,255,0.2); }
+.hud-btn.is-on { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-soft); }
+
+/* HDRI picker in the HUD. Matches the slider label style. */
+.hud-select {
+  display: flex; align-items: center; gap: 8px;
+  font: 600 9px/1 "JetBrains Mono", monospace;
+  color: var(--ink-3);
+  letter-spacing: 0.16em;
+}
+.hud-select select {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: rgba(0,0,0,0.3);
+  color: var(--ink);
+  font: 500 11px/1 "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+  padding: 6px 22px 6px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='rgba(190,190,186,0.5)' d='M0 0h10L5 6z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 120ms;
+}
+.hud-select select:hover { border-color: rgba(190,190,186,0.22); }
+.hud-select select:focus { border-color: var(--accent); }
+.hud-select option { background: var(--bg-2); color: var(--ink); }
+
+/* ─── responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  :root { --rail-w-l: 240px; --rail-w-r: 260px; }
+}
+@media (max-width: 880px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--top-h) 40vh 40vh var(--hud-h);
+    grid-template-areas:
+      "top"
+      "stage"
+      "left"
+      "hud";
+  }
+  .rail-right { display: none; }
+  .topbar-r { display: none; }
+  .topbar-mid { display: none; }
+  .hud {
+    gap: 12px;
+    overflow: hidden;
+    padding: 0 14px;
+  }
+  .hud-l, .hud-r { gap: 14px; }
+  .hud-stat .hud-v {
+    max-width: 96px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .hud-l .hud-stat:nth-child(2) {
+    display: none;
+  }
+  .hud-r .slider:nth-of-type(2),
+  .hud-btn {
+    display: none;
+  }
+  .slider input[type="range"] { width: 84px; }
+}
