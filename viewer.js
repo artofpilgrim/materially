@@ -240,7 +240,16 @@ class PBRViewer {
       alpha: true,
       powerPreference: "high-performance",
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // DPR cap of 1.5 keeps things sharp on HiDPI without paying the full 2×
+    // (= 4× pixel count). Visual difference vs 2.0 is barely perceptible on
+    // a sphere; perf difference on Firefox is large.
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // Halve the back-buffer used by transmissive materials. The transmission
+    // BTDF samples this for refracted light, which on Firefox is one of the
+    // dominant frame-time costs. 0.5 means the back-buffer is rendered at
+    // quarter the pixel area — slight blur in refracted-through-glass detail,
+    // ~4× cheaper transmission pass.
+    this.renderer.transmissionResolutionScale = 0.5;
     this.renderer.toneMapping = THREE.AgXToneMapping;
     this.renderer.toneMappingExposure = 1.0;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
