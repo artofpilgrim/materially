@@ -389,10 +389,10 @@ class PBRViewer {
     }
 
     // Iridescence (thin-film). Reset every apply so switching from an anodized
-    // material back to a plain one doesn't leave residual rainbow.
-    const irid = mat.iridescence ?? 0;
-    if (irid !== m.iridescence) m.needsUpdate = true;
-    m.iridescence = irid;
+    // material back to a plain one doesn't leave residual rainbow. three.js's
+    // own setter bumps `material.version` on 0↔>0 transitions, so we don't
+    // need to flag needsUpdate manually here.
+    m.iridescence = mat.iridescence ?? 0;
     m.iridescenceIOR = mat.iridescenceIOR ?? 1.3;
     m.iridescenceThicknessRange = mat.iridescenceThicknessRange ?? [100, 400];
 
@@ -423,7 +423,12 @@ class PBRViewer {
       m.roughness = opts.roughnessOverride;
     }
 
-    m.needsUpdate = true;
+    // Intentionally no blanket `m.needsUpdate = true` here — three.js auto-
+    // bumps version on transmission/clearcoat/iridescence 0↔>0 transitions,
+    // and the F82 define toggle above sets needsUpdate only when the define
+    // actually changes. The previous blanket flag forced a full shader
+    // recompile (with all our onBeforeCompile injections re-running) on
+    // every material change, which stalled Firefox for ~hundreds of ms.
   }
 
   setExposure(v) { this.renderer.toneMappingExposure = v; }
