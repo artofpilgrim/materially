@@ -12,7 +12,7 @@ A physically-based material reference viewer. Renders measured PBR data with sha
 - **Faked subsurface** for skin (I–VI), bone, pearl, marble, and porcelain via tuned `transmission` + `absorbColor` + short `absorbDistance`.
 - **Sphere-chord thickness patch** so transmissive sphere centres absorb proportionally to actual path length instead of a flat scalar.
 - **AgX tone mapping** (default) and a smoother PMREM fork (LOD_MIN=7) for cleaner high-roughness IBL blur.
-- **Custom meshes** (Sphere / Cube / Inset Cube) loaded from GLB and auto-fitted to unit radius.
+- **Custom meshes** — Sphere / Cube / Inset Cube ship with the build; an in-HUD `+ GLB` button lets you upload your own `.glb` to test materials against arbitrary geometry. All meshes are auto-centred and scaled to unit radius.
 
 ## Develop
 
@@ -26,13 +26,17 @@ npm run check   # build + node --check on JS + tests
 
 The viewer is hand-loaded ES modules driven by a small React UI bundled with esbuild. No bundler at runtime; three.js comes from a CDN via the importmap in [`index.html`](index.html).
 
-## Adding a custom mesh
+## Custom meshes
+
+**One-off testing** — click `+ GLB` in the HUD and pick a `.glb` file. It's parsed in-browser, added to the mesh dropdown, and selected. In-memory only; uploads clear on refresh.
+
+**Permanent (shipped with the build)**:
 
 1. Drop a `.glb` into `assets/`.
 2. Add an entry to `MESH_URLS` in [`viewer.js`](viewer.js).
 3. Add a row to `MESH_OPTIONS` in [`app.jsx`](app.jsx).
 
-The loader auto-centres and auto-scales to a unit-radius bounding sphere so the chord-thickness patch keeps working.
+Either path runs the same auto-centre + scale-to-unit-radius pipeline so the chord-thickness patch keeps working.
 
 ## Data sources
 
